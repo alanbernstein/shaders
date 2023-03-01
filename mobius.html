@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8"> 
+        <style type="text/css">
+         html, body {
+             margin: 0px;
+             font-family: arial, sans-serif;
+             font-weight: bold;
+         }
+
+         #container {
+             position: relative;
+         }
+         #container canvas, .overlay {
+             position: absolute;
+         }
+         canvas {
+             border: 1px solid black;
+         }
+
+         .overlay {
+             z-index: 10;
+             opacity: 50%;
+         }
+
+         .slider-container {
+             background: white;
+             width: 300px;
+         }
+
+         .label-order {
+             color: lime;
+         }
+         .label-width {
+             color: blue;
+         }
+         .label-scale {
+             color: purple;
+         }
+         .label-speed {
+             color: red;
+         }
+
+         .slider {
+             margin-left: 3em;
+         }
+
+         #slider-order {
+             background: lime;
+         }
+         #slider-width {
+             background: blue;
+         }
+         #slider-scale {
+             background: purple;
+         }
+         #slider-speed {
+             background: red;
+         }
+
+
+        </style>
+    </head>
+    <body>
+        <!-- https://jameshfisher.com/2017/10/05/webgl-fragment-shader-animation.html
+             http://glslsandbox.com/e#44667.1
+
+             https://stackoverflow.com/questions/32793105/placing-50-transparent-div-over-canvas-so-canvas-is-still-visible
+
+             TODO: learn css
+           -->
+
+        <div id="container">
+            <div class="slider-container overlay">
+                <!-- <img class="overlay" src="planewave-eq-stacked.png" height="80px"> -->
+                mobius, power, exponential, conformal map
+                <br /><br />
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <br /><br /><br />
+
+                <label for="slider-order" class="label-order">complexity:</label>
+                <span class="overlay label left-label label-order" id="label-order"></span>
+                <input type="range" min="3.0" max="10.0" value="5.0" class="overlay slider" id="slider-order"><br />
+
+                <label for="slider-width" class="label-width">distance:</label>
+                <span class="overlay label left-label label-width" id="label-width"></span>
+                <input type="range" min="10" max="180" value="160" class="overlay slider" id="slider-width"><br />
+
+                <label for="slider-scale" class="label-scale">trippiness:</label>
+                <span class="overlay label left-label label-scale" id="label-scale"></span>
+                <input type="range" min="1" max="10" step="0.1" value="5" class="overlay slider" id="slider-scale"><br />
+
+                <label for="slider-speed" class="label-speed">urgency:</label>
+                <span class="overlay label left-label label-speed" id="label-speed"></span>
+                <input type="range" min="0.1" max="10" step="0.1" value="1.0" class="overlay slider" id="slider-speed"><br />
+
+                <br />
+                <a href="https://isohedral.ca/escher-like-spiral-tilings/">see</a> <a href="https://twitter.com/KangarooPhysics/status/1168272509860552704">also</a>
+            </div>
+
+            <canvas class="gl" id="gl_canvas"></canvas>
+        </div>
+
+        <script id="vertex-shader" type="glsl">
+         attribute vec2 coord;
+         void main() {
+             gl_Position = vec4(coord, 0, 1);
+         }
+        </script>
+
+        <script id="fragment-shader" type="glsl">
+         #ifdef GL_FRAGMENT_PRECISION_HIGH
+	       precision highp float;
+         #else
+         precision mediump float;
+         #endif
+
+         // https://gist.github.com/DonKarlssonSan/f87ba5e4e5f1093cb83e39024a6a5e72
+         #define PI 3.14159265
+         #define TAU 6.28318531
+         #define cx0 vec2(0, 0)
+         #define cx1 vec2(1, 0)
+         #define cxi vec2(0, 1)
+         #define cx1n vec2(-1, 0)
+         #define cxin vec2(0, -1)
+         #define cx_mul(a, b) vec2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x)
+         #define cx_div(a, b) vec2(((a.x*b.x+a.y*b.y)/(b.x*b.x+b.y*b.y)),((a.y*b.x-a.x*b.y)/(b.x*b.x+b.y*b.y)))
+         #define cx_modulus(a) length(a)
+         #define cx_conj(a) vec2(a.x, -a.y)
+         #define cx_arg(a) atan(a.y, a.x)
+         #define cx_sin(a) vec2(sin(a.x) * cosh(a.y), cos(a.x) * sinh(a.y))
+         #define cx_cos(a) vec2(cos(a.x) * cosh(a.y), -sin(a.x) * sinh(a.y))
+         #define cx_iexp(a) vec2(cos(a), sin(a))
+         #define cx_polar(r, a) vec2(r*cos(a), r*sin(a))
+         #define cx_pow(z, e) cx_polar(pow(cx_modulus(z), e), cx_arg(z)*e)
+
+         vec2 cx_log(vec2 a) {
+             float rpart = sqrt((a.x*a.x)+(a.y*a.y));
+             float ipart = atan(a.y,a.x);
+             if (ipart > PI) ipart=ipart-(2.0*PI);
+             return vec2(log(rpart),ipart);
+         }
+
+         vec2 cx_mobius(vec2 a, vec2 A, vec2 B, vec2 C, vec2 D) {
+             vec2 num = cx_mul(A, a) + B;
+             vec2 den = cx_mul(C, a) + D;
+             return cx_div(num, den);
+         }
+
+         #define W 800.0  // canvas dimensions TODO get as uniform
+         #define H 800.0
+
+         // TODO get mouse as uniforms
+         uniform float millisecs, order, width, scale, speed;
+         // millisecs: time since start
+         // order: number of waves to sum
+         // width: dimension of region in coordinate space
+         // scale: z-height before wrapping into colormap
+         // speed: how fast phase progresses
+
+         float fmod(float x, float y) {
+             return (x - y * floor(x / y));
+         }
+
+         float wrap(float x) {
+             return abs(fmod(x+1.0,2.0)-1.0);
+         }
+
+         float thresh1(float x) {
+             return abs(x-floor(x+0.5));
+         }
+
+         float grid(vec2 z) {
+             return min(thresh1(z.x), thresh1(z.y));
+         }
+
+         float gridthresh(vec2 z) {
+             if(grid(z) > 0.05) {
+                 return 1.0;
+             }
+             return 0.0;
+         }
+
+         float checker(vec2 z) {
+             return fmod(floor(z.x) + floor(z.y), 2.0);
+         }
+
+
+         void main() {
+             // def draw(scale1=1, exp=3/2, scale2=14.5, angle2=0.278, A=1, B=1, C=1, D=-1, scale3=10.44, angle3=-0.291):
+             float phase = 0.5 * speed * millisecs/1000.0;
+             vec2 cx_phase = cx_iexp(phase);
+
+             float A = 0.25*width/W;
+             float x = A*(gl_FragCoord.x - W/2.0);
+             float y = A*(gl_FragCoord.y - H/1.0);
+             vec2 z = vec2(x, y);
+
+             //z = cx_mul(z, cx_phase);
+             //= cx_log(z);
+
+             z = cx_pow(z, 1.5);
+             z = cx_div(z, vec2(14, 4));
+             z = cx_mobius(z, cx1, cx1, cx1, cx1n);
+             z = cx_mul(z, vec2(0, 10.0/TAU));
+             z = cx_log(z);
+             z = z + vec2(0, phase);
+             z = cx_mul(vec2(10.0/TAU, -3.0/TAU), z);
+             z = z + 0.5;
+
+             //z = cx_pow(z, 1.5);
+             //z = cx_mul(z, cx_phase);
+             //z3 = z2 / (scale2 * np.exp(1j*angle2))
+             //z = cx_mobius(z, cx1, cx1, cx1, cx1n);
+             //z = cx_mul(z, cx_phase);
+             //z = cx_log(z);
+             //z = cx_mul(z, cx_phase);
+             //w = (scale3 * np.exp(1j*angle3)) / (2 * np.pi) * z5 + 1 / 2
+             //return thresh2a(w) > 0.05
+             //float w = grid(z);
+
+
+             //float w = checker(z);
+             float w = gridthresh(z);
+             gl_FragColor = vec4(1.0-w, 1.0-w, 1.0-w, 1);
+
+             //z = wrap(scale * z / order);  // z in [0, 1]
+         }
+
+        </script>
+
+
+        <script type="text/javascript">
+
+         const canvas = document.getElementById("gl_canvas");
+         const gl = canvas.getContext("webgl");
+         gl.canvas.width  = window.innerWidth;
+         gl.canvas.height = window.innerHeight;
+
+         // webgl boilerplate
+         gl.viewport(0,0,canvas.width, canvas.height);
+         const vertShader = gl.createShader(gl.VERTEX_SHADER);
+         gl.shaderSource(vertShader, document.getElementById('vertex-shader').innerText);
+         gl.compileShader(vertShader);
+         const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+         gl.shaderSource(fragShader, document.getElementById('fragment-shader').innerText);
+         gl.compileShader(fragShader);
+         if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
+             console.error(gl.getShaderInfoLog(fragShader));
+         }
+         const prog = gl.createProgram();
+         gl.attachShader(prog, vertShader);
+         gl.attachShader(prog, fragShader);
+         gl.linkProgram(prog);
+         gl.useProgram(prog);
+         const vertBuf = gl.createBuffer();
+         gl.bindBuffer(gl.ARRAY_BUFFER, vertBuf);
+         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,1,  -1,-1,  1,-1, 1,1]), gl.STATIC_DRAW);
+         const coordPtr = gl.getAttribLocation(prog, 'coord');
+         gl.vertexAttribPointer(coordPtr, 2, gl.FLOAT, false, 0, 0);
+         gl.enableVertexAttribArray(coordPtr);
+         gl.clearColor(1,0,0,1);
+
+         // setup uniform variables
+         const millisecsPtr = gl.getUniformLocation(prog, 'millisecs');
+         const orderPtr = gl.getUniformLocation(prog, 'order');
+         const widthPtr = gl.getUniformLocation(prog, 'width');
+         const scalePtr = gl.getUniformLocation(prog, 'scale');
+         const speedPtr = gl.getUniformLocation(prog, 'speed');
+         const start = new Date().getTime();
+
+         // render in loop
+         function draw() {
+             var order = document.getElementById("slider-order").value
+             var width = document.getElementById("slider-width").value;
+             var scale = document.getElementById("slider-scale").value;
+             var speed = document.getElementById("slider-speed").value;
+             document.getElementById("label-order").innerHTML = order;
+             document.getElementById("label-width").innerHTML = width;
+             document.getElementById("label-scale").innerHTML = scale;
+             document.getElementById("label-speed").innerHTML = speed;
+
+             gl.uniform1f(millisecsPtr, (new Date().getTime())-start);
+             gl.uniform1f(orderPtr, order);
+             gl.uniform1f(widthPtr, width);
+             gl.uniform1f(scalePtr, scale);
+             gl.uniform1f(speedPtr, speed);
+             gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+             requestAnimationFrame(draw);
+         }
+         requestAnimationFrame(draw);
+
+        </script>
+    </body>
+</html>
