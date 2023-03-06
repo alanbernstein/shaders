@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <style type="text/css" >
+    body {
+        margin: 0;
+        background-color: white;
+    }
+    canvas {
+        display: block;  /* prevents scrollbar */
+        width: 100vw;
+        height: 100vh;
+     }
+     #container {
+         position: relative;
+     }
+     #container canvas, .overlay {
+         position: absolute;
+     }
+     canvas {
+         border: 1px solid black;
+     }
+
+     .overlay {
+         z-index: 10;
+         opacity: 90%;
+     }
+
+    </style>
+    </head>
+    <body>
+
+
+        <!-- https://stackoverflow.com/questions/13870677/resize-viewport-canvas-according-to-browser-window-size -->
+        <!-- https://webglfundamentals.org/webgl/lessons/webgl-resizing-the-canvas.html -->
+
+        <div id="container">
+            <canvas id="gl_canvas"></canvas>
+            <div class="slider-container overlay">
+                <label for="slider1" class="label1">v1:</label>
+                <span class="overlay label left-label label1" id="label1"></span>
+                <input type="range" min="3.0" max="10.0" value="5.0" class="overlay slider" id="slider1"><br />
+
+            </div>
+
+
+
+
+        <script id="vertex-shader" type="glsl">
+         attribute vec2 coord;
+         void main() {
+             gl_Position = vec4(coord, 0, 1);
+         }
+        </script>
+
+        <script id="fragment-shader" type="glsl">
+         #ifdef GL_FRAGMENT_PRECISION_HIGH
+	       precision highp float;
+         #else
+         precision mediump float;
+         #endif
+
+         uniform float millisecs;
+         uniform float W;
+         uniform float H;
+         uniform float mx;
+         uniform float my;
+         //uniform float order;
+         float order = 5.0;
+
+         float fmod(float x, float y) {
+             return (x - y * floor(x / y));
+         }
+
+         float wrap(float x) {
+             return abs(fmod(x+1.0,2.0)-1.0);
+         }
+
+         void main() {
+             float phase = 1.0 * millisecs/1000.0;
+             float t;
+             float A = 160.0/W;
+             float cx = mx;
+             float cy = H-my;
+             float x = A*(gl_FragCoord.x - cx);
+             float y = A*(gl_FragCoord.y - cy);
+             float z = sqrt(x*x+y*y)/10.0-phase;
+             for(int n=0; n<0; n++) {
+                 t = float(n) * 3.14159 / order;
+                 z += cos(x*cos(t) + y*sin(t) + phase);
+                 if(n == int(order)) {
+                     break;
+                 }
+             }
+             z = wrap(5.0 * z / order);  // z in [0, 1]
+             gl_FragColor = vec4(1.0-z, z, 1.0-z, 1);
+         }
+
+        </script>
+
+
+        <script type="text/javascript">
+
+         canvas = document.getElementById("gl_canvas");
+         gl = canvas.getContext("webgl");
+         gl.canvas.width  = window.innerWidth;
+         gl.canvas.height = window.innerHeight;
+
+         // webgl boilerplate
+         gl.viewport(0,0,canvas.width, canvas.height);
+         const vertShader = gl.createShader(gl.VERTEX_SHADER);
+         gl.shaderSource(vertShader, document.getElementById('vertex-shader').innerText);
+         gl.compileShader(vertShader);
+         const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+         gl.shaderSource(fragShader, document.getElementById('fragment-shader').innerText);
+         gl.compileShader(fragShader);
+         if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
+             console.error(gl.getShaderInfoLog(fragShader));
+         }
+         const prog = gl.createProgram();
+         gl.attachShader(prog, vertShader);
+         gl.attachShader(prog, fragShader);
+         gl.linkProgram(prog);
+         gl.useProgram(prog);
+         const vertBuf = gl.createBuffer();
+         gl.bindBuffer(gl.ARRAY_BUFFER, vertBuf);
+         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,1,  -1,-1,  1,-1, 1,1]), gl.STATIC_DRAW);
+         const coordPtr = gl.getAttribLocation(prog, 'coord');
+         gl.vertexAttribPointer(coordPtr, 2, gl.FLOAT, false, 0, 0);
+         gl.enableVertexAttribArray(coordPtr);
+         gl.clearColor(1,0,0,1);
+
+         // setup uniform variables
+         const millisecsPtr = gl.getUniformLocation(prog, 'millisecs');
+         const canvasWidthPtr = gl.getUniformLocation(prog, 'W');
+         const canvasHeightPtr = gl.getUniformLocation(prog, 'H');
+         const mouseXPtr = gl.getUniformLocation(prog, 'mx');
+         const mouseYPtr = gl.getUniformLocation(prog, 'my');
+         const v1Ptr = gl.getUniformLocation(prog, 'v1');
+         const start = new Date().getTime();
+
+         mouseX = window.innerWidth/2
+         mouseY = window.innerHeight/2
+
+         function render() {
+             console.log("render start");
+
+             var w = canvas.clientWidth;
+             var h = canvas.clientHeight;
+
+             gl.viewport(0, 0, w, h);
+
+             // shader stuff
+             var v1 = document.getElementById("slider1").value
+             document.getElementById("label1").innerHTML = v1;
+
+             gl.uniform1f(millisecsPtr, (new Date().getTime())-start);
+             //gl.uniform1f(v1Ptr, slider1);
+             gl.uniform1f(canvasWidthPtr, w);
+             gl.uniform1f(canvasHeightPtr, h);
+             gl.uniform1f(mouseXPtr, mouseX);
+             gl.uniform1f(mouseYPtr, mouseY);
+             gl.uniform1f(v1Ptr, 5.0);
+             gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+             requestAnimationFrame(render);
+         };
+
+         function resizeCanvas() {
+
+             var width = canvas.clientWidth;
+             var height = canvas.clientHeight;
+             console.log("resizeCanvas start "  +width+" "+height)
+             if (canvas.width != width ||
+                 canvas.height != height) {
+                 canvas.width = width;
+                 canvas.height = height;
+
+                 // in this case just render when the window is resized.
+                 render();
+             }
+         }
+
+         function movePointer(e) {
+             mouseX = e.clientX
+             mouseY = e.clientY
+         }
+
+         function main() {
+             console.log("main start")
+             canvas = document.getElementById("gl_canvas");
+             gl = canvas.getContext("webgl");
+             resizeCanvas();
+         }
+
+         requestAnimationFrame(render);
+
+         window.addEventListener('resize', resizeCanvas);
+         window.addEventListener('mousemove', movePointer);
+         window.addEventListener('touchmove', movePointer);
+         main();
+
+
+        </script>
+
+
+    </body>
+</html>
