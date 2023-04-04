@@ -37,10 +37,17 @@
         <div id="container">
             <canvas id="gl_canvas"></canvas>
             <div class="slider-container overlay">
-                <label for="slider1" class="label1">v1:</label>
+                <label for="slider1" class="label1">order:</label>
                 <span class="overlay label left-label label1" id="label1"></span>
                 <input type="range" min="3.0" max="10.0" value="7.0" class="overlay slider" id="slider1"><br />
 
+                <label for="slider2" class="label2">speed:</label>
+                <span class="overlay label left-label label2" id="label2"></span>
+                <input type="range" min="-2.0" max="2.0" value="0.1" step="0.1" class="overlay slider" id="slider2"><br />
+
+                <label for="slider3" class="label3">width:</label>
+                <span class="overlay label left-label label3" id="label3"></span>
+                <input type="range" min="0.5" max="3.0" value="1.0" step="0.5" class="overlay slider" id="slider3"><br />
             </div>
 
         <script id="vertex-shader" type="glsl">
@@ -64,6 +71,8 @@
          uniform float mx;
          uniform float my;
          uniform float v1;
+         uniform float v2;
+         uniform float v3;
 
          float fmod(float x, float y) {
              return (x - y * floor(x / y));
@@ -147,13 +156,14 @@
         }
         
         vec3 hsl2rgb(float h, float s, float l) {
+            // https://github.com/Jam3/glsl-hsl2rgb/blob/master/index.glsl
             return hsl2rgb(vec3(h, s, l));
         }
 
-        vec4 scene(float t, vec2 pos) {
+        float sdf_text(float t, vec2 pos) {
             // manual text example
             // TODO: array of structs instead
-            float d = 100.0;
+            float d = 1000.0;
             // H
             d = min(d, line_segment(pos, vec2(0, 0), vec2(0, 2)));
             d = min(d, line_segment(pos, vec2(1, 0), vec2(1, 2)));
@@ -190,33 +200,54 @@
             d = min(d, arc(pos-vec2(13.5, 1.5), 0.0, 0.5*PI, 0.5));
             d = min(d, arc(pos-vec2(13.5, 0.5), 1.5*PI, 2.0*PI, 0.5));
 
+            return d;
+        }
+
+        vec4 color1(float t, float d, float v1, float v2, float v3) {
+            // continuous gradient color
+            /*
+            z = d;                    // distance from SDF scene
+            z = z/width               // size of colorbands
+            z = z - t*speed           // bands emanate out (or in) from letterforms
+            z = wrap(z)               // bidirectional wrap in [0, 1] - ugly, dont do it
+            z = floor(order*z)/order  // quantize to get bands
+            z = fmod(z, 1.0)          // unidirectional wrap in [0, 1]
+            */
             float order = v1;
-            float zz = floor(order*wrap(d-t*0.1))/order;
-            vec3 rgb = hsl2rgb(zz, 1.0, 0.5);
+            float speed = v2;
+            float width = v3;
+            float zz = floor(order*(d/width-t*speed))/order;
+            vec3 rgb = hsl2rgb(fmod(zz, 1.0), 1.0, 0.5);
             return vec4(rgb, 1.0);
+        }
 
-            //float z = wrap(5.0 * d / 1.0);  // z in [0, 1]
-            //return vec4(1.0-z, 1.0-z, z, 1);
+        vec4 color2(float d) {
+            // simple color
+            float z = wrap(5.0 * d / 1.0);  // z in [0, 1]
+            return vec4(1.0-z, 1.0-z, z, 1);
+        }
 
-
-            //vec3 col = vec3(1.0) - sign(d)*vec3(0.1,0.4,0.7);
-            //col *= 1.0 - exp(-2.0*abs(d));
-            //col *= 0.8 + 0.2*cos(140.0*d);
-            //col = mix(col, vec3(1.0), 1.0-smoothstep(0.0,0.02,abs(d)) );
-            //return vec4(col,1.0);
+        vec4 color3(float d) {
+            // Inigo Quilez color
+            vec3 col = vec3(1.0) - sign(d)*vec3(0.1,0.4,0.7);
+            col *= 1.0 - exp(-2.0*abs(d));
+            col *= 0.8 + 0.2*cos(140.0*d);
+            col = mix(col, vec3(1.0), 1.0-smoothstep(0.0,0.02,abs(d)) );
+            return vec4(col,1.0);
         }
 
         void main() {
-            vec2 iResolution = vec2(W, H);
-            vec2 pos = (gl_FragCoord.xy - iResolution.xy * .5) / iResolution.y;
+            vec2 res = vec2(W, H);
+            vec2 pos = (gl_FragCoord.xy - res.xy * .5) / min(res.x, res.y);
             float zoom = 10.0;
             pos *= zoom;
             pos += vec2(7, .7);
             float t = 1.0 * millisecs / 1000.0;
 
-            gl_FragColor = scene(t, pos);
-        
-         }
+            float d = sdf_text(t, pos);
+            gl_FragColor = color1(t, d, v1, v2, v3);
+            // gl_FragColor = color2(d);
+        }
 
         </script>
 
@@ -259,6 +290,8 @@
          const mouseXPtr = gl.getUniformLocation(prog, 'mx');
          const mouseYPtr = gl.getUniformLocation(prog, 'my');
          const v1Ptr = gl.getUniformLocation(prog, 'v1');
+         const v2Ptr = gl.getUniformLocation(prog, 'v2');
+         const v3Ptr = gl.getUniformLocation(prog, 'v3');
          const start = new Date().getTime();
 
          mouseX = window.innerWidth/2
@@ -275,9 +308,15 @@
              // shader stuff
              var v1 = document.getElementById("slider1").value
              document.getElementById("label1").innerHTML = v1;
+             var v2 = document.getElementById("slider2").value
+             document.getElementById("label2").innerHTML = v2;
+             var v3 = document.getElementById("slider3").value
+             document.getElementById("label3").innerHTML = v3;
 
              gl.uniform1f(millisecsPtr, (new Date().getTime())-start);
              gl.uniform1f(v1Ptr, v1);
+             gl.uniform1f(v2Ptr, v2);
+             gl.uniform1f(v3Ptr, v3);
              gl.uniform1f(canvasWidthPtr, w);
              gl.uniform1f(canvasHeightPtr, h);
              gl.uniform1f(mouseXPtr, mouseX);
