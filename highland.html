@@ -223,7 +223,7 @@
 
         vec4 color2(float d) {
             // simple color
-            float z = wrap(5.0 * d / 1.0);  // z in [0, 1]
+            float z = wrap(5.0 * d / 1.0);  // z -> sawtooth in [0, 1]
             return vec4(1.0-z, 1.0-z, z, 1);
         }
 
@@ -239,7 +239,7 @@
         void main() {
             vec2 res = vec2(W, H);
             vec2 pos = (gl_FragCoord.xy - res.xy * .5) / min(res.x, res.y);
-            float zoom = 10.0;
+            float zoom = 13.0;
             pos *= zoom;
             pos += vec2(7, .7);
             float t = 1.0 * millisecs / 1000.0;
