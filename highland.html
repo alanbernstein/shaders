@@ -102,6 +102,7 @@
          uniform float v1;
          uniform float v2;
          uniform float v3;
+         uniform float v4;
 
          float fmod(float x, float y) {
              return (x - y * floor(x / y));
@@ -232,7 +233,7 @@
             return d;
         }
 
-        vec4 color1(float t, float d, float v1, float v2, float v3) {
+        vec4 color1(float t, float d, float order, float speed, float width) {
             // continuous gradient color
             /*
             z = d;                    // distance from SDF scene
@@ -242,27 +243,100 @@
             z = floor(order*z)/order  // quantize to get bands
             z = fmod(z, 1.0)          // unidirectional wrap in [0, 1]
             */
-            float order = v1;
-            float speed = v2;
-            float width = v3;
             float zz = floor(order*(d/width-t*speed))/order;
             vec3 rgb = hsl2rgb(fmod(zz, 1.0), 1.0, 0.5);
             return vec4(rgb, 1.0);
         }
 
-        vec4 color2(float d) {
+        vec4 color2(float d, float width) {
             // simple color
+            d = d/width;
             float z = wrap(5.0 * d / 1.0);  // z -> sawtooth in [0, 1]
             return vec4(1.0-z, 1.0-z, z, 1);
         }
 
-        vec4 color3(float d) {
-            // Inigo Quilez color
+        vec4 color3(float d, float width) {
+            // Inigo Quilez brown/blue banded color
             vec3 col = vec3(1.0) - sign(d)*vec3(0.1,0.4,0.7);
+            d = d/width/4.0;
             col *= 1.0 - exp(-2.0*abs(d));
             col *= 0.8 + 0.2*cos(140.0*d);
             col = mix(col, vec3(1.0), 1.0-smoothstep(0.0,0.02,abs(d)) );
             return vec4(col,1.0);
+        }
+
+        vec4 color4(float t, float d, float speed, float width) {
+            // 70s retro constant-N palette
+            /*
+            const vec3 cmap[6] = vec3[6](
+                vec3(63, 138, 140),
+                vec3(12, 86, 121),
+                vec3(11, 8, 53),
+                vec3(229, 52, 11),
+                vec3(242, 138, 15),
+                vec3(255, 231, 189)
+            );
+            */
+            
+            float order = 6.0;
+
+            float zz = fmod(floor(order*(d/width-t*speed))/order, 8.0);
+            vec3 rgb;
+            if (zz <= 6.0) {
+                rgb = vec3(63, 138, 140);                
+            }
+            if (zz <= 5.0) {
+                rgb = vec3(12, 86, 121);
+            }
+            if (zz <= 4.0) {
+                rgb = vec3(11, 8, 53);
+            }
+            if (zz <= 3.0) {
+                rgb = vec3(229, 52, 11);
+            }
+            if (zz <= 2.0) {
+                rgb = vec3(242, 138, 15);
+            }
+            if (zz <= 1.0) {
+                rgb = vec3(255, 231, 189);
+                // rgb = vec3(86, 59, 15);
+            }
+            //vec3 rgb = cmap[zz];
+            return vec4(rgb/255.0, 1.0);
+        }
+
+        struct gradient {
+            vec3 a;
+            vec3 b;
+            vec3 c;
+            vec3 d;
+        };
+        gradient g1 = gradient(vec3(0.5,0.5,0.5), vec3(0.5,0.5,0.5), vec3(1.0,1.0,1.0), vec3(0.0,0.33,0.67));  // rainbow
+        gradient g2 = gradient(vec3(0.5,0.5,0.5), vec3(0.5,0.5,0.5), vec3(1.0,1.0,1.0), vec3(0.0,0.10,0.20));
+        //gradient g3 = gradient(vec3(0.5,0.5,0.5), vec3(0.5,0.5,0.5), vec3(1.0,1.0,1.0), vec3(0.3,0.20,0.20));
+        //gradient g4 = gradient(vec3(0.5,0.5,0.5), vec3(0.5,0.5,0.5), vec3(1.0,1.0,0.5), vec3(0.8,0.90,0.30));
+        //gradient g5 = gradient(vec3(0.5,0.5,0.5), vec3(0.5,0.5,0.5), vec3(1.0,0.7,0.4), vec3(0.0,0.15,0.20));
+        //gradient g6 = gradient(vec3(0.5,0.5,0.5), vec3(0.5,0.5,0.5), vec3(2.0,1.0,0.0), vec3(0.5,0.20,0.25));
+        //gradient g7 = gradient(vec3(0.8,0.5,0.4), vec3(0.2,0.4,0.2), vec3(2.0,1.0,1.0), vec3(0.0,0.25,0.25));
+        //gradient g8 = gradient(vec3(0.821, 0.328, 0.242), vec3(0.659, 0.481, 0.896), vec3(0.612, 0.340, 0.296), vec3(2.820, 3.026, -0.273));
+
+        vec4 gengrad(float t, float d, gradient g, float speed, float width) {
+            // Inigo Quilez generative gradient palette
+            // https://www.shadertoy.com/view/ll2GD3
+            // http://dev.thi.ng/gradients/
+
+            // compute colors
+            float z = d/width - speed*t;
+            vec3 col = clamp(g.a + g.b*cos( 6.28318*(g.c*z+g.d) ), 0.0, 1.0);
+
+            // band
+            float f = fract(1.0*7.0);
+            // borders
+            //col *= smoothstep(0.49, 0.47, 0.5);
+            // shadowing
+            //col *= 0.5 + 0.5*sqrt(4.0*f*(1.0-f));
+
+            return vec4( col, 1.0 );
         }
 
         void main() {
@@ -273,9 +347,18 @@
             pos += vec2(7, .7);
             float t = 1.0 * millisecs / 1000.0;
 
+            float order = v1;
+            float speed = v2;
+            float width = v3;
+            float color = v4;
+
             float d = sdf_text(t, pos);
-            gl_FragColor = color1(t, d, v1, v2, v3);
-            // gl_FragColor = color2(d);
+            if(color == 1.0) { gl_FragColor = color1(t, d, order, speed, width); }
+            if(color == 2.0) { gl_FragColor = color2(d, width); }
+            if(color == 3.0) { gl_FragColor = color3(d, width); }
+            if(color == 4.0) { gl_FragColor = color4(t, d, speed, width); }
+            if(color == 5.0) { gl_FragColor = gengrad(t, d, g1, speed, width); }
+            if(color == 6.0) { gl_FragColor = gengrad(t, d, g2, speed, width); }
         }
 
         </script>
