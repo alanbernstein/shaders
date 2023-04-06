@@ -10,19 +10,17 @@
         display: block;  /* prevents scrollbar */
         width: 100vw;
         height: 100vh;
-     }
-     #container {
-         position: relative;
-     }
-     #container canvas, .overlay {
-         position: absolute;
-     }
-     canvas {
-         border: 1px solid black;
-     }
+        border: 1px solid black;
+    }
+    #container {
+        position: relative;
+    }
+    #container canvas, .overlay {
+        position: absolute;
+    }
 
-     .slider-container {
-        background: white;
+    .control-panel {
+        background: #444;
         border: 3px solid #000;
         width: 300px;
         padding: 5px;
@@ -37,21 +35,28 @@
         grid-gap: 0px;
     }
 
-    .box {
-        background-color: #444;
+    .control-panel>div {
         color: #fff;
         font-family: Arial, Helvetica, sans-serif;
+        font-size: 2vw;
     }
 
-     .overlay {
-         z-index: 10;
-         opacity: 90%;
-     }
+    .header {
+        grid-area: 1 / 1 / span 1 / span 3;
+    }
+    .box {
+        margin-top: 15px;
+        margin-bottom: 15px;
+    }
+
+    .overlay {
+        z-index: 10;
+        opacity: 90%;
+    }
 
     </style>
     </head>
     <body>
-
 
         <!-- https://stackoverflow.com/questions/13870677/resize-viewport-canvas-according-to-browser-window-size -->
         <!-- https://webglfundamentals.org/webgl/lessons/webgl-resizing-the-canvas.html -->
@@ -59,60 +64,59 @@
         <div id="container">
             <canvas id="gl_canvas"></canvas>
             <div class="control-panel overlay">
-                <div class="note">blah blah</div>
-                <div class="slider-container">
-                    <div class="box"><label for="slider1" class="label1">order:</label></div>
-                    <div class="box"><span class="overlay label left-label label1" id="label1"></span></div>
-                    <div class="box"><input type="range" min="3.0" max="20.0" value="7.0" class="overlay slider" id="slider1"><br /></div>
+                <div class="header">todo</div>
+                <div class="box"><label for="slider1" class="label1">color:</label></div>
+                <div class="box"><span class="overlay label left-label label1" id="label1"></span></div>
+                <div class="box"><input type="range" min="1" max="6" value="0" step="1" class="overlay slider" id="slider1"><br /></div>
 
-                    <div class="box"><label for="slider2" class="label2">speed:</label></div>
-                    <div class="box"><span class="overlay label left-label label2" id="label2"></span></div>
-                    <div class="box"><input type="range" min="-2.0" max="2.0" value="0.1" step="0.1" class="overlay slider" id="slider2"><br /></div>
+                <div class="box"><label for="slider2" class="label2">order:</label></div>
+                <div class="box"><span class="overlay label left-label label2" id="label2"></span></div>
+                <div class="box"><input type="range" min="3.0" max="20.0" value="7.0" class="overlay slider" id="slider2"><br /></div>
 
-                    <div class="box"><label for="slider3" class="label3">width:</label></div>
-                    <div class="box"><span class="overlay label left-label label3" id="label3"></span></div>
-                    <div class="box"><input type="range" min="0.5" max="3.0" value="1.0" step="0.5" class="overlay slider" id="slider3"><br /></div>
+                <div class="box"><label for="slider3" class="label3">speed:</label></div>
+                <div class="box"><span class="overlay label left-label label3" id="label3"></span></div>
+                <div class="box"><input type="range" min="-2.0" max="2.0" value="0.1" step="0.1" class="overlay slider" id="slider3"><br /></div>
 
-                    <div class="box"><label for="slider4" class="label4">color:</label></div>
-                    <div class="box"><span class="overlay label left-label label4" id="label4"></span></div>
-                    <div class="box"><input type="range" min="1" max="6" value="0" step="1" class="overlay slider" id="slider4"><br /></div>
-                </div>
+                <div class="box"><label for="slider4" class="label4">width:</label></div>
+                <div class="box"><span class="overlay label left-label label4" id="label4"></span></div>
+                <div class="box"><input type="range" min="0.5" max="3.0" value="1.0" step="0.5" class="overlay slider" id="slider4"><br /></div>
             </div>
+        </div>
 
         <script id="vertex-shader" type="glsl">
-         attribute vec2 coord;
-         void main() {
-             gl_Position = vec4(coord, 0, 1);
-         }
+        attribute vec2 coord;
+        void main() {
+            gl_Position = vec4(coord, 0, 1);
+        }
         </script>
 
         <script id="fragment-shader" type="glsl">
-         #ifdef GL_FRAGMENT_PRECISION_HIGH
-	       precision highp float;
-         #else
-           precision mediump float;
-         #endif
+        #ifdef GL_FRAGMENT_PRECISION_HIGH
+        precision highp float;
+        #else
+        precision mediump float;
+        #endif
 
-         float PI = 3.14159265359;
-         uniform float millisecs;
-         uniform float W;
-         uniform float H;
-         uniform float mx;
-         uniform float my;
-         uniform float v1;
-         uniform float v2;
-         uniform float v3;
-         uniform float v4;
+        float PI = 3.14159265359;
+        uniform float millisecs;
+        uniform float W;
+        uniform float H;
+        uniform float mx;
+        uniform float my;
+        uniform float v1;
+        uniform float v2;
+        uniform float v3;
+        uniform float v4;
 
-         float fmod(float x, float y) {
-             return (x - y * floor(x / y));
-         }
+        float fmod(float x, float y) {
+            return (x - y * floor(x / y));
+        }
 
-         float wrap(float x) {
-             return abs(fmod(x+1.0,2.0)-1.0);
-         }
+        float wrap(float x) {
+            return abs(fmod(x+1.0,2.0)-1.0);
+        }
 
-         float line_segment(in vec2 p, in vec2 a, in vec2 b) {
+        float line_segment(in vec2 p, in vec2 a, in vec2 b) {
             vec2 ba = b - a;
             vec2 pa = p - a;
             float h = clamp(dot(pa, ba) / dot(ba, ba), 0., 1.);
@@ -251,17 +255,17 @@
         vec4 color2(float d, float width) {
             // simple color
             d = d/width;
-            float z = wrap(5.0 * d / 1.0);  // z -> sawtooth in [0, 1]
+            float z = wrap(10.0 * d / 1.0);  // z -> sawtooth in [0, 1]
             return vec4(1.0-z, 1.0-z, z, 1);
         }
 
         vec4 color3(float d, float width) {
             // Inigo Quilez brown/blue banded color
             vec3 col = vec3(1.0) - sign(d)*vec3(0.1,0.4,0.7);
-            d = d/width/4.0;
-            col *= 1.0 - exp(-2.0*abs(d));
-            col *= 0.8 + 0.2*cos(140.0*d);
-            col = mix(col, vec3(1.0), 1.0-smoothstep(0.0,0.02,abs(d)) );
+            float dd = d/width/10.0;
+            col *= 1.0 - exp(-2.0*abs(dd));
+            col *= 0.8 + 0.2*cos(140.0*dd);
+            col = mix(col, vec3(1.0), 1.0-smoothstep(0.0,0.02,abs(dd)) );
             return vec4(col,1.0);
         }
 
@@ -313,6 +317,9 @@
         };
         gradient g1 = gradient(vec3(0.5,0.5,0.5), vec3(0.5,0.5,0.5), vec3(1.0,1.0,1.0), vec3(0.0,0.33,0.67));  // rainbow
         gradient g2 = gradient(vec3(0.5,0.5,0.5), vec3(0.5,0.5,0.5), vec3(1.0,1.0,1.0), vec3(0.0,0.10,0.20));
+        gradient g3 = gradient(vec3(0.537, 0.582, 0.300), vec3(-0.559, -0.497, 0.336), vec3(4.920, 3.839, 6.292), vec3(0.514, -0.022, 0.939)); // 6-color 70s palette
+
+
         //gradient g3 = gradient(vec3(0.5,0.5,0.5), vec3(0.5,0.5,0.5), vec3(1.0,1.0,1.0), vec3(0.3,0.20,0.20));
         //gradient g4 = gradient(vec3(0.5,0.5,0.5), vec3(0.5,0.5,0.5), vec3(1.0,1.0,0.5), vec3(0.8,0.90,0.30));
         //gradient g5 = gradient(vec3(0.5,0.5,0.5), vec3(0.5,0.5,0.5), vec3(1.0,0.7,0.4), vec3(0.0,0.15,0.20));
@@ -320,7 +327,7 @@
         //gradient g7 = gradient(vec3(0.8,0.5,0.4), vec3(0.2,0.4,0.2), vec3(2.0,1.0,1.0), vec3(0.0,0.25,0.25));
         //gradient g8 = gradient(vec3(0.821, 0.328, 0.242), vec3(0.659, 0.481, 0.896), vec3(0.612, 0.340, 0.296), vec3(2.820, 3.026, -0.273));
 
-        vec4 gengrad(float t, float d, gradient g, float speed, float width) {
+        vec4 gengrad(float t, float d, gradient g, float order, float speed, float width) {
             // Inigo Quilez generative gradient palette
             // https://www.shadertoy.com/view/ll2GD3
             // http://dev.thi.ng/gradients/
@@ -328,6 +335,7 @@
             // compute colors
             float z = d/width - speed*t;
             vec3 col = clamp(g.a + g.b*cos( 6.28318*(g.c*z+g.d) ), 0.0, 1.0);
+            col = ceil(col*order) / order;
 
             // band
             float f = fract(1.0*7.0);
@@ -347,18 +355,18 @@
             pos += vec2(7, .7);
             float t = 1.0 * millisecs / 1000.0;
 
-            float order = v1;
-            float speed = v2;
-            float width = v3;
-            float color = v4;
+            float color = v1;
+            float order = v2;
+            float speed = v3;
+            float width = v4;
 
             float d = sdf_text(t, pos);
             if(color == 1.0) { gl_FragColor = color1(t, d, order, speed, width); }
             if(color == 2.0) { gl_FragColor = color2(d, width); }
             if(color == 3.0) { gl_FragColor = color3(d, width); }
             if(color == 4.0) { gl_FragColor = color4(t, d, speed, width); }
-            if(color == 5.0) { gl_FragColor = gengrad(t, d, g1, speed, width); }
-            if(color == 6.0) { gl_FragColor = gengrad(t, d, g2, speed, width); }
+            if(color == 5.0) { gl_FragColor = gengrad(t, d, g1, order, speed, width); }
+            if(color == 6.0) { gl_FragColor = gengrad(t, d, g2, order, speed, width); }
         }
 
         </script>
@@ -366,122 +374,122 @@
 
         <script type="text/javascript">
 
-         canvas = document.getElementById("gl_canvas");
-         gl = canvas.getContext("webgl");
-         gl.canvas.width  = window.innerWidth;
-         gl.canvas.height = window.innerHeight;
+        canvas = document.getElementById("gl_canvas");
+        gl = canvas.getContext("webgl");
+        gl.canvas.width  = window.innerWidth;
+        gl.canvas.height = window.innerHeight;
 
-         // webgl boilerplate
-         gl.viewport(0,0,canvas.width, canvas.height);
-         const vertShader = gl.createShader(gl.VERTEX_SHADER);
-         gl.shaderSource(vertShader, document.getElementById('vertex-shader').innerText);
-         gl.compileShader(vertShader);
-         const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
-         gl.shaderSource(fragShader, document.getElementById('fragment-shader').innerText);
-         gl.compileShader(fragShader);
-         if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
-             console.error(gl.getShaderInfoLog(fragShader));
-         }
-         const prog = gl.createProgram();
-         gl.attachShader(prog, vertShader);
-         gl.attachShader(prog, fragShader);
-         gl.linkProgram(prog);
-         gl.useProgram(prog);
-         const vertBuf = gl.createBuffer();
-         gl.bindBuffer(gl.ARRAY_BUFFER, vertBuf);
-         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,1,  -1,-1,  1,-1, 1,1]), gl.STATIC_DRAW);
-         const coordPtr = gl.getAttribLocation(prog, 'coord');
-         gl.vertexAttribPointer(coordPtr, 2, gl.FLOAT, false, 0, 0);
-         gl.enableVertexAttribArray(coordPtr);
-         gl.clearColor(1,0,0,1);
+        // webgl boilerplate
+        gl.viewport(0,0,canvas.width, canvas.height);
+        const vertShader = gl.createShader(gl.VERTEX_SHADER);
+        gl.shaderSource(vertShader, document.getElementById('vertex-shader').innerText);
+        gl.compileShader(vertShader);
+        const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(fragShader, document.getElementById('fragment-shader').innerText);
+        gl.compileShader(fragShader);
+        if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
+            console.error(gl.getShaderInfoLog(fragShader));
+        }
+        const prog = gl.createProgram();
+        gl.attachShader(prog, vertShader);
+        gl.attachShader(prog, fragShader);
+        gl.linkProgram(prog);
+        gl.useProgram(prog);
+        const vertBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,1,  -1,-1,  1,-1, 1,1]), gl.STATIC_DRAW);
+        const coordPtr = gl.getAttribLocation(prog, 'coord');
+        gl.vertexAttribPointer(coordPtr, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(coordPtr);
+        gl.clearColor(1,0,0,1);
 
          // setup uniform variables
-         const millisecsPtr = gl.getUniformLocation(prog, 'millisecs');
-         const canvasWidthPtr = gl.getUniformLocation(prog, 'W');
-         const canvasHeightPtr = gl.getUniformLocation(prog, 'H');
-         const mouseXPtr = gl.getUniformLocation(prog, 'mx');
-         const mouseYPtr = gl.getUniformLocation(prog, 'my');
-         const v1Ptr = gl.getUniformLocation(prog, 'v1');
-         const v2Ptr = gl.getUniformLocation(prog, 'v2');
-         const v3Ptr = gl.getUniformLocation(prog, 'v3');
-         const v4Ptr = gl.getUniformLocation(prog, 'v4');
-         const start = new Date().getTime();
+        const millisecsPtr = gl.getUniformLocation(prog, 'millisecs');
+        const canvasWidthPtr = gl.getUniformLocation(prog, 'W');
+        const canvasHeightPtr = gl.getUniformLocation(prog, 'H');
+        const mouseXPtr = gl.getUniformLocation(prog, 'mx');
+        const mouseYPtr = gl.getUniformLocation(prog, 'my');
+        const v1Ptr = gl.getUniformLocation(prog, 'v1');
+        const v2Ptr = gl.getUniformLocation(prog, 'v2');
+        const v3Ptr = gl.getUniformLocation(prog, 'v3');
+        const v4Ptr = gl.getUniformLocation(prog, 'v4');
+        const start = new Date().getTime();
 
-         mouseX = window.innerWidth/2
-         mouseY = window.innerHeight/2
+        mouseX = window.innerWidth/2
+        mouseY = window.innerHeight/2
 
-         function render() {
-             console.log("render start");
+        function render() {
+            console.log("render start");
 
-             var w = canvas.clientWidth;
-             var h = canvas.clientHeight;
+            var w = canvas.clientWidth;
+            var h = canvas.clientHeight;
 
-             gl.viewport(0, 0, w, h);
+            gl.viewport(0, 0, w, h);
 
-             v4_labels = {
+            v1_labels = {
                 1: "primary",
                 2: "simple",
                 3: "IQ",
                 4: "70s",
                 5: "gengrad1",
                 6: "6",
-             }
-             // shader stuff
-             var v1 = document.getElementById("slider1").value
-             document.getElementById("label1").innerHTML = v1;
-             var v2 = document.getElementById("slider2").value
-             document.getElementById("label2").innerHTML = v2;
-             var v3 = document.getElementById("slider3").value
-             document.getElementById("label3").innerHTML = v3;
-             var v4 = document.getElementById("slider4").value
-             document.getElementById("label4").innerHTML = v4_labels[v4];
+            }
+            // shader stuff
+            var v1 = document.getElementById("slider1").value
+            document.getElementById("label1").innerHTML = v1_labels[v1];
+            var v2 = document.getElementById("slider2").value
+            document.getElementById("label2").innerHTML = v2;
+            var v3 = document.getElementById("slider3").value
+            document.getElementById("label3").innerHTML = v3;
+            var v4 = document.getElementById("slider4").value
+            document.getElementById("label4").innerHTML = v4;
 
-             gl.uniform1f(millisecsPtr, (new Date().getTime())-start);
-             gl.uniform1f(v1Ptr, v1);
-             gl.uniform1f(v2Ptr, v2);
-             gl.uniform1f(v3Ptr, v3);
-             gl.uniform1f(v4Ptr, v4);
-             gl.uniform1f(canvasWidthPtr, w);
-             gl.uniform1f(canvasHeightPtr, h);
-             gl.uniform1f(mouseXPtr, mouseX);
-             gl.uniform1f(mouseYPtr, mouseY);
-             gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
-             requestAnimationFrame(render);
-         };
+            gl.uniform1f(millisecsPtr, (new Date().getTime())-start);
+            gl.uniform1f(v1Ptr, v1);
+            gl.uniform1f(v2Ptr, v2);
+            gl.uniform1f(v3Ptr, v3);
+            gl.uniform1f(v4Ptr, v4);
+            gl.uniform1f(canvasWidthPtr, w);
+            gl.uniform1f(canvasHeightPtr, h);
+            gl.uniform1f(mouseXPtr, mouseX);
+            gl.uniform1f(mouseYPtr, mouseY);
+            gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+            requestAnimationFrame(render);
+        };
 
-         function resizeCanvas() {
+        function resizeCanvas() {
 
-             var width = canvas.clientWidth;
-             var height = canvas.clientHeight;
-             console.log("resizeCanvas start "  +width+" "+height)
-             if (canvas.width != width ||
-                 canvas.height != height) {
-                 canvas.width = width;
-                 canvas.height = height;
+            var width = canvas.clientWidth;
+            var height = canvas.clientHeight;
+            console.log("resizeCanvas start "  +width+" "+height)
+            if (canvas.width != width ||
+                canvas.height != height) {
+                canvas.width = width;
+                canvas.height = height;
 
-                 // in this case just render when the window is resized.
-                 render();
-             }
-         }
+                // in this case just render when the window is resized.
+                render();
+            }
+        }
 
-         function movePointer(e) {
-             mouseX = e.clientX
-             mouseY = e.clientY
-         }
+        function movePointer(e) {
+            mouseX = e.clientX
+            mouseY = e.clientY
+        }
 
-         function main() {
-             console.log("main start")
-             canvas = document.getElementById("gl_canvas");
-             gl = canvas.getContext("webgl");
-             resizeCanvas();
-         }
+        function main() {
+            console.log("main start")
+            canvas = document.getElementById("gl_canvas");
+            gl = canvas.getContext("webgl");
+            resizeCanvas();
+        }
 
-         requestAnimationFrame(render);
+        requestAnimationFrame(render);
 
-         window.addEventListener('resize', resizeCanvas);
-         window.addEventListener('mousemove', movePointer);
-         window.addEventListener('touchmove', movePointer);
-         main();
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('mousemove', movePointer);
+        window.addEventListener('touchmove', movePointer);
+        main();
 
 
         </script>
