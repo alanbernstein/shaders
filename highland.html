@@ -6,6 +6,11 @@
         margin: 0;
         background-color: white;
     }
+
+    a {
+        text-decoration: none;
+    }
+
     canvas {
         display: block;  /* prevents scrollbar */
         width: 100vw;
@@ -22,7 +27,7 @@
     .control-panel {
         background: #444;
         border: 3px solid #000;
-        width: 300px;
+        width: 33%;
         padding: 5px;
         border-radius: 10px;
 
@@ -41,12 +46,42 @@
         font-size: 2vw;
     }
 
+    .label2 {
+        color: lime;
+    }
+
+    .label3 {
+        color: red;
+    }
+
+    .label4 {
+        color: blue;
+    }
+
     .header {
         grid-area: 1 / 1 / span 1 / span 3;
+        height: 100px;
+        width: 60%;
+        margin-left: auto;
+        margin-right: auto;
     }
+
+    .footer-left {
+        grid-area: 6 / 1 / span 1 / span 2;
+    }
+
+    .footer-right {
+        grid-area: 6 / 3 / span 1 / span 1;
+        text-align: right;
+    }
+
     .box {
         margin-top: 15px;
         margin-bottom: 15px;
+    }
+
+    .hidden {
+        display: none;
     }
 
     .overlay {
@@ -63,8 +98,9 @@
 
         <div id="container">
             <canvas id="gl_canvas"></canvas>
-            <div class="control-panel overlay">
-                <div class="header">todo</div>
+            <div class="control-panel overlay" id="control-panel">
+                <div class="header"><img class="overlay" src="images/generative-gradient-eq.png" height=100px></div>
+
                 <div class="box"><label for="slider1" class="label1">color:</label></div>
                 <div class="box"><span class="overlay label left-label label1" id="label1"></span></div>
                 <div class="box"><input type="range" min="1" max="6" value="0" step="1" class="overlay slider" id="slider1"><br /></div>
@@ -80,6 +116,9 @@
                 <div class="box"><label for="slider4" class="label4">width:</label></div>
                 <div class="box"><span class="overlay label left-label label4" id="label4"></span></div>
                 <div class="box"><input type="range" min="0.5" max="3.0" value="1.0" step="0.5" class="overlay slider" id="slider4"><br /></div>
+
+                <div class="footer-left">SDF text</div>
+                <div class="footer-right"><a href="index.html">←</a>&nbsp;<a id="toggler" onclick="toggleControls()">⇲</span></div>
             </div>
         </div>
 
@@ -280,6 +319,7 @@
                 vec3(242, 138, 15),
                 vec3(255, 231, 189)
             );
+            vec3 rgb = cmap[zz];
             */
             
             float order = 6.0;
@@ -305,7 +345,6 @@
                 rgb = vec3(255, 231, 189);
                 // rgb = vec3(86, 59, 15);
             }
-            //vec3 rgb = cmap[zz];
             return vec4(rgb/255.0, 1.0);
         }
 
@@ -338,7 +377,7 @@
             col = ceil(col*order) / order;
 
             // band
-            float f = fract(1.0*7.0);
+            //float f = fract(1.0*7.0);
             // borders
             //col *= smoothstep(0.49, 0.47, 0.5);
             // shadowing
@@ -475,6 +514,19 @@
         function movePointer(e) {
             mouseX = e.clientX
             mouseY = e.clientY
+        }
+
+        function toggleControls() {
+            toggler = document.getElementById("toggler");
+            boxes = document.querySelectorAll(".box, .header");
+            stateChar = toggler.innerHTML;
+            if(stateChar === "⇲") { // hide
+                toggler.innerHTML = "⇱";
+                boxes.forEach((box) => {box.classList.add("hidden")})
+            } else if(stateChar == "⇱") { // show
+                toggler.innerHTML = "⇲";
+                boxes.forEach((box) => {box.classList.remove("hidden")})
+            }
         }
 
         function main() {
