@@ -1,101 +1,11 @@
 <!DOCTYPE html>
 <html>
     <head>
-    <meta charset="UTF-8">
-    <style type="text/css" >
-    body {
-        margin: 0;
-        background-color: white;
-    }
-
-    a {
-        text-decoration: none;
-    }
-
-    canvas {
-        display: block;  /* prevents scrollbar */
-        width: 100vw;
-        height: 100vh;
-        border: 1px solid black;
-    }
-    #container {
-        position: relative;
-    }
-    #container canvas, .overlay {
-        position: absolute;
-    }
-
-    .control-panel {
-        background: #444;
-        border: 3px solid #000;
-        width: 33%;
-        padding: 5px;
-        border-radius: 10px;
-
-        position: fixed;
-        bottom: 10px;
-        right: 10px;
-
-        display: grid;
-        grid-template-columns: 20% 25% 55%;
-        grid-gap: 0px;
-    }
-
-    .control-panel>div {
-        color: #fff;
-        font-family: Arial, Helvetica, sans-serif;
-        font-size: 2vw;
-    }
-
-    .label2 {
-        color: lime;
-    }
-
-    .label3 {
-        color: red;
-    }
-
-    .label4 {
-        color: blue;
-    }
-
-    .header {
-        grid-area: 1 / 1 / span 1 / span 3;
-        height: 100px;
-        width: 60%;
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    .footer-left {
-        grid-area: 6 / 1 / span 1 / span 2;
-    }
-
-    .footer-right {
-        grid-area: 6 / 3 / span 1 / span 1;
-        text-align: right;
-    }
-
-    .box {
-        margin-top: 15px;
-        margin-bottom: 15px;
-    }
-
-    .hidden {
-        display: none;
-    }
-
-    .overlay {
-        z-index: 10;
-        opacity: 90%;
-    }
-
-    </style>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" type="text/css" href="base.css" />
+        <script src="gl.js"></script>
     </head>
     <body>
-
-        <!-- https://stackoverflow.com/questions/13870677/resize-viewport-canvas-according-to-browser-window-size -->
-        <!-- https://webglfundamentals.org/webgl/lessons/webgl-resizing-the-canvas.html -->
 
         <div id="container">
             <canvas id="gl_canvas"></canvas>
@@ -119,7 +29,7 @@
                 <div class="box"><input type="range" min="0.5" max="3.0" value="1.0" step="0.5" class="overlay slider" id="slider4"><br /></div>
 
                 <div class="footer-left">SDF text</div>
-                <div class="footer-right"><a href="index.html">←</a>&nbsp;<a id="toggler" onclick="toggleControls()">⇲</span></div>
+                <div class="footer-right"><a class="back" href="index.html">←</a>&nbsp;<a id="toggler" onclick="toggleControls()">⇲</span></div>
             </div>
         </div>
 
@@ -416,34 +326,9 @@
 
         canvas = document.getElementById("gl_canvas");
         gl = canvas.getContext("webgl");
-        gl.canvas.width  = window.innerWidth;
-        gl.canvas.height = window.innerHeight;
+        prog = init(canvas, gl);
 
-        // webgl boilerplate
-        gl.viewport(0,0,canvas.width, canvas.height);
-        const vertShader = gl.createShader(gl.VERTEX_SHADER);
-        gl.shaderSource(vertShader, document.getElementById('vertex-shader').innerText);
-        gl.compileShader(vertShader);
-        const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
-        gl.shaderSource(fragShader, document.getElementById('fragment-shader').innerText);
-        gl.compileShader(fragShader);
-        if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
-            console.error(gl.getShaderInfoLog(fragShader));
-        }
-        const prog = gl.createProgram();
-        gl.attachShader(prog, vertShader);
-        gl.attachShader(prog, fragShader);
-        gl.linkProgram(prog);
-        gl.useProgram(prog);
-        const vertBuf = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertBuf);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,1,  -1,-1,  1,-1, 1,1]), gl.STATIC_DRAW);
-        const coordPtr = gl.getAttribLocation(prog, 'coord');
-        gl.vertexAttribPointer(coordPtr, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(coordPtr);
-        gl.clearColor(1,0,0,1);
-
-         // setup uniform variables
+        // setup uniform variables
         const millisecsPtr = gl.getUniformLocation(prog, 'millisecs');
         const canvasWidthPtr = gl.getUniformLocation(prog, 'W');
         const canvasHeightPtr = gl.getUniformLocation(prog, 'H');
@@ -472,7 +357,7 @@
                 3: "IQ",
                 4: "70s",
                 5: "gengrad1",
-                6: "6",
+                6: "gengrad2",
             }
             // shader stuff
             var v1 = document.getElementById("slider1").value
@@ -515,19 +400,6 @@
         function movePointer(e) {
             mouseX = e.clientX
             mouseY = e.clientY
-        }
-
-        function toggleControls() {
-            toggler = document.getElementById("toggler");
-            boxes = document.querySelectorAll(".box, .header");
-            stateChar = toggler.innerHTML;
-            if(stateChar === "⇲") { // hide
-                toggler.innerHTML = "⇱";
-                boxes.forEach((box) => {box.classList.add("hidden")})
-            } else if(stateChar == "⇱") { // show
-                toggler.innerHTML = "⇲";
-                boxes.forEach((box) => {box.classList.remove("hidden")})
-            }
         }
 
         function main() {

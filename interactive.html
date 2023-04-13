@@ -30,10 +30,6 @@
     </head>
     <body>
 
-
-        <!-- https://stackoverflow.com/questions/13870677/resize-viewport-canvas-according-to-browser-window-size -->
-        <!-- https://webglfundamentals.org/webgl/lessons/webgl-resizing-the-canvas.html -->
-
         <div id="container">
             <canvas id="gl_canvas"></canvas>
             <div class="slider-container overlay">
@@ -42,8 +38,6 @@
                 <input type="range" min="3.0" max="10.0" value="5.0" class="overlay slider" id="slider1"><br />
 
             </div>
-
-
 
 
         <script id="vertex-shader" type="glsl">
@@ -100,6 +94,7 @@
 
 
         <script type="text/javascript">
+         // TODO: gl canvas doesn't resize properly
 
          canvas = document.getElementById("gl_canvas");
          gl = canvas.getContext("webgl");

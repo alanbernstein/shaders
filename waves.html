@@ -1,107 +1,36 @@
+<!DOCTYPE html>
 <html>
     <head>
-        <meta charset="UTF-8"> 
-        <style type="text/css">
-         html, body {
-             margin: 0px;
-             font-family: arial, sans-serif;
-             font-weight: bold;
-         }
-
-         #container {
-             position: relative;
-         }
-         #container canvas, .overlay {
-             position: absolute;
-         }
-         canvas {
-             border: 1px solid black;
-         }
-
-         .overlay {
-             z-index: 10;
-             opacity: 50%;
-         }
-
-         .slider-container {
-             background: white;
-             width: 300px;
-         }
-
-         .label-order {
-             color: lime;
-         }
-         .label-width {
-             color: blue;
-         }
-         .label-scale {
-             color: purple;
-         }
-         .label-speed {
-             color: red;
-         }
-
-         .slider {
-             margin-left: 3em;
-         }
-
-         #slider-order {
-             background: lime;
-         }
-         #slider-width {
-             background: blue;
-         }
-         #slider-scale {
-             background: purple;
-         }
-         #slider-speed {
-             background: red;
-         }
-
-
-        </style>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" type="text/css" href="base.css" />
+        <script src="gl.js"></script>
     </head>
     <body>
-        <!-- https://jameshfisher.com/2017/10/05/webgl-fragment-shader-animation.html
-             http://glslsandbox.com/e#44667.1
-
-             https://stackoverflow.com/questions/32793105/placing-50-transparent-div-over-canvas-so-canvas-is-still-visible
-
-             TODO: learn css
-           -->
 
         <div id="container">
-            <div class="slider-container overlay">
-                <img class="overlay" src="images/planewave-eq-stacked.png" height="80px">
-                <br /><br />
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                <br /><br /><br />
-
-                <label for="slider-order" class="label-order">complexity:</label>
-                <span class="overlay label left-label label-order" id="label-order"></span>
-                <input type="range" min="3.0" max="10.0" value="5.0" class="overlay slider" id="slider-order"><br />
-
-                <label for="slider-width" class="label-width">distance:</label>
-                <span class="overlay label left-label label-width" id="label-width"></span>
-                <input type="range" min="10" max="180" value="160" class="overlay slider" id="slider-width"><br />
-
-                <label for="slider-scale" class="label-scale">trippiness:</label>
-                <span class="overlay label left-label label-scale" id="label-scale"></span>
-                <input type="range" min="1" max="10" step="0.1" value="5" class="overlay slider" id="slider-scale"><br />
-
-                <label for="slider-speed" class="label-speed">urgency:</label>
-                <span class="overlay label left-label label-speed" id="label-speed"></span>
-                <input type="range" min="0.1" max="10" step="0.1" value="1.0" class="overlay slider" id="slider-speed"><br />
-
-                <br />
-                stolen with ❤ from <a href="https://txyyss.wordpress.com/2016/06/14/plane-wave/">this</a> <a href="https://www.youtube.com/watch?v=0SWRcH9p4Uo">guy</a>
-
-            </div>
-
             <canvas class="gl" id="gl_canvas"></canvas>
+            <div class="control-panel overlay" id="control-panel">
+                <div class="header"><img class="overlay" src="images/planewave-eq-stacked.png" height=100px></div>
+
+                <div class="box"><label for="slider1" class="label1">complexity:</label></div>
+                <div class="box"><span class="overlay label left-label label1" id="label1"></span></div>
+                <div class="box"><input type="range" min="3.0" max="10.0" value="5.0" step="1" class="overlay slider" id="slider1"><br /></div>
+
+                <div class="box"><label for="slider2" class="label2">distance:</label></div>
+                <div class="box"><span class="overlay label left-label label2" id="label2"></span></div>
+                <div class="box"><input type="range" min="10" max="180" value="160" class="overlay slider" id="slider2"><br /></div>
+
+                <div class="box"><label for="slider3" class="label3">trippiness:</label></div>
+                <div class="box"><span class="overlay label left-label label3" id="label3"></span></div>
+                <div class="box"><input type="range" min="1" max="10" value="5" step="0.1" class="overlay slider" id="slider3"><br /></div>
+
+                <div class="box"><label for="slider4" class="label4">speed:</label></div>
+                <div class="box"><span class="overlay label left-label label4" id="label4"></span></div>
+                <div class="box"><input type="range" min="0.1" max="10" value="1.0" step="0.1" class="overlay slider" id="slider4"><br /></div>
+
+                <div class="footer-left">blinky waves <a href="https://txyyss.wordpress.com/2016/06/14/plane-wave/">1</a> <a href="https://www.youtube.com/watch?v=0SWRcH9p4Uo">2</a></div>
+                <div class="footer-right"><a class="back" href="index.html">←</a>&nbsp;<a id="toggler" onclick="toggleControls()">⇲</span></div>
+            </div>
         </div>
 
         <script id="vertex-shader" type="glsl">
@@ -118,16 +47,15 @@
          precision mediump float;
          #endif
 
-         #define W 800.0  // canvas dimensions TODO get as uniform
+         #define W 800.0
          #define H 800.0
 
-         // TODO get mouse as uniforms
-         uniform float millisecs, order, width, scale, speed;
+         uniform float millisecs, v1, v2, v3, v4;
+         float order = v1; // number of waves to sum
+         float width = v2; // dimension of region in coordinate space
+         float scale = v3; // z-height before wrapping into colormap
+         float speed = v4; // how fast phase progresses
          // millisecs: time since start
-         // order: number of waves to sum
-         // width: dimension of region in coordinate space
-         // scale: z-height before wrapping into colormap
-         // speed: how fast phase progresses
 
          float fmod(float x, float y) {
              return (x - y * floor(x / y));
@@ -136,7 +64,6 @@
          float wrap(float x) {
              return abs(fmod(x+1.0,2.0)-1.0);
          }
-
 
          void main() {
              float phase = speed * millisecs/1000.0;
@@ -147,7 +74,6 @@
              float y = A*(gl_FragCoord.y - H/2.0);
              float z = 0.0;
              for(int n=0; n<10; n++) {
-                 // TODO precompute cos(t) and sin(t) tables (as uniform arrays)
                  t = float(n) * 3.14159 / order;
                  z += cos(x*cos(t) + y*sin(t) + phase);
                  if(n == int(order)) {
@@ -166,57 +92,32 @@
 
          const canvas = document.getElementById("gl_canvas");
          const gl = canvas.getContext("webgl");
-         gl.canvas.width  = window.innerWidth;
-         gl.canvas.height = window.innerHeight;
-
-         // webgl boilerplate
-         gl.viewport(0,0,canvas.width, canvas.height);
-         const vertShader = gl.createShader(gl.VERTEX_SHADER);
-         gl.shaderSource(vertShader, document.getElementById('vertex-shader').innerText);
-         gl.compileShader(vertShader);
-         const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
-         gl.shaderSource(fragShader, document.getElementById('fragment-shader').innerText);
-         gl.compileShader(fragShader);
-         if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
-             console.error(gl.getShaderInfoLog(fragShader));
-         }
-         const prog = gl.createProgram();
-         gl.attachShader(prog, vertShader);
-         gl.attachShader(prog, fragShader);
-         gl.linkProgram(prog);
-         gl.useProgram(prog);
-         const vertBuf = gl.createBuffer();
-         gl.bindBuffer(gl.ARRAY_BUFFER, vertBuf);
-         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,1,  -1,-1,  1,-1, 1,1]), gl.STATIC_DRAW);
-         const coordPtr = gl.getAttribLocation(prog, 'coord');
-         gl.vertexAttribPointer(coordPtr, 2, gl.FLOAT, false, 0, 0);
-         gl.enableVertexAttribArray(coordPtr);
-         gl.clearColor(1,0,0,1);
+         prog = init(canvas, gl);
 
          // setup uniform variables
          const millisecsPtr = gl.getUniformLocation(prog, 'millisecs');
-         const orderPtr = gl.getUniformLocation(prog, 'order');
-         const widthPtr = gl.getUniformLocation(prog, 'width');
-         const scalePtr = gl.getUniformLocation(prog, 'scale');
-         const speedPtr = gl.getUniformLocation(prog, 'speed');
+         const v1Ptr = gl.getUniformLocation(prog, 'v1');
+         const v2Ptr = gl.getUniformLocation(prog, 'v2');
+         const v3Ptr = gl.getUniformLocation(prog, 'v3');
+         const v4Ptr = gl.getUniformLocation(prog, 'v4');
          const start = new Date().getTime();
 
          // render in loop
          function draw() {
-             var order = document.getElementById("slider-order").value
-             var width = document.getElementById("slider-width").value;
-             var scale = document.getElementById("slider-scale").value;
-             var speed = document.getElementById("slider-speed").value;
-             document.getElementById("label-order").innerHTML = order;
-             document.getElementById("label-width").innerHTML = width;
-             document.getElementById("label-scale").innerHTML = scale;
-             document.getElementById("label-speed").innerHTML = speed;
+             var v1 = document.getElementById("slider1").value
+             var v2 = document.getElementById("slider2").value;
+             var v3 = document.getElementById("slider3").value;
+             var v4 = document.getElementById("slider4").value;
+             document.getElementById("label1").innerHTML = v1;
+             document.getElementById("label2").innerHTML = v2;
+             document.getElementById("label3").innerHTML = v3;
+             document.getElementById("label4").innerHTML = v4;
 
              gl.uniform1f(millisecsPtr, (new Date().getTime())-start);
-             gl.uniform1f(orderPtr, order);
-             gl.uniform1f(widthPtr, width);
-             gl.uniform1f(scalePtr, scale);
-             gl.uniform1f(speedPtr, speed);
+             gl.uniform1f(v1Ptr, v1);
+             gl.uniform1f(v2Ptr, v2);
+             gl.uniform1f(v3Ptr, v3);
+             gl.uniform1f(v4Ptr, v4);
              gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
              requestAnimationFrame(draw);
          }
