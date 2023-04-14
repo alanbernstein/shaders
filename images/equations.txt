@@ -1,0 +1,12 @@
+https://www.overleaf.com/project/642e4d5b72b9fff4fbdbe722
+
+
+https://latexeditor.lagrida.com/
+
+\begin{align}
+x &= \frac{d}{\color{yellow}W} - t \cdot \textcolor{cyan}{S} \\
+
+\vec{y} &= \vec{a} + \vec{b} \cdot \cos( 2\pi \cdot (\vec{c} \cdot x + \vec{d})) \\
+
+\overrightarrow{RGB} &= \frac{1}{\color{magenta}N} \left\lceil \textcolor{magenta}{N} \cdot \text{clamp}(\vec{y}, 0, 1) \right\rceil
+\end{align}
