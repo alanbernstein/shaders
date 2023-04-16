@@ -1,42 +1,23 @@
 <!DOCTYPE html>
 <html>
     <head>
-    <style type="text/css" >
-    body {
-        margin: 0;
-        background-color: white;
-    }
-    canvas {
-        display: block;  /* prevents scrollbar */
-        width: 100vw;
-        height: 100vh;
-     }
-     #container {
-         position: relative;
-     }
-     #container canvas, .overlay {
-         position: absolute;
-     }
-     canvas {
-         border: 1px solid black;
-     }
-
-     .overlay {
-         z-index: 10;
-         opacity: 90%;
-     }
-
-    </style>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" type="text/css" href="base.css" />
+        <script src="gl.js"></script>
     </head>
     <body>
 
         <div id="container">
             <canvas id="gl_canvas"></canvas>
-            <div class="slider-container overlay">
-                <label for="slider1" class="label1">v1:</label>
-                <span class="overlay label left-label label1" id="label1"></span>
-                <input type="range" min="3.0" max="10.0" value="5.0" class="overlay slider" id="slider1"><br />
+            <div class="control-panel overlay" id="control-panel">
+                <div class="header"></div>
 
+                <div class="box"><label for="slider1" class="label1">v1:</label></div>
+                <div class="box"><span class="overlay label left-label label1" id="label1"></span></div>
+                <div class="box"><input type="range" min="3.0" max="10.0" value="5.0" class="overlay slider" id="slider1"><br /></div>
+
+                <div class="footer-left">interactive</div>
+                <div class="footer-right"><a class="back" href="index.html">←</a>&nbsp;<a id="toggler" onclick="toggleControls()">⇲</span></div>
             </div>
 
 
@@ -98,32 +79,7 @@
 
          canvas = document.getElementById("gl_canvas");
          gl = canvas.getContext("webgl");
-         gl.canvas.width  = window.innerWidth;
-         gl.canvas.height = window.innerHeight;
-
-         // webgl boilerplate
-         gl.viewport(0,0,canvas.width, canvas.height);
-         const vertShader = gl.createShader(gl.VERTEX_SHADER);
-         gl.shaderSource(vertShader, document.getElementById('vertex-shader').innerText);
-         gl.compileShader(vertShader);
-         const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
-         gl.shaderSource(fragShader, document.getElementById('fragment-shader').innerText);
-         gl.compileShader(fragShader);
-         if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
-             console.error(gl.getShaderInfoLog(fragShader));
-         }
-         const prog = gl.createProgram();
-         gl.attachShader(prog, vertShader);
-         gl.attachShader(prog, fragShader);
-         gl.linkProgram(prog);
-         gl.useProgram(prog);
-         const vertBuf = gl.createBuffer();
-         gl.bindBuffer(gl.ARRAY_BUFFER, vertBuf);
-         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,1,  -1,-1,  1,-1, 1,1]), gl.STATIC_DRAW);
-         const coordPtr = gl.getAttribLocation(prog, 'coord');
-         gl.vertexAttribPointer(coordPtr, 2, gl.FLOAT, false, 0, 0);
-         gl.enableVertexAttribArray(coordPtr);
-         gl.clearColor(1,0,0,1);
+         prog = init(canvas, gl);
 
          // setup uniform variables
          const millisecsPtr = gl.getUniformLocation(prog, 'millisecs');
