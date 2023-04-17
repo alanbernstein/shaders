@@ -37,15 +37,17 @@ function create_sliders(parent, spec) {
     
 }
 
+var charHide = "⇲";
+var charShow = "⇱";
 function toggleControls() {
     toggler = document.getElementById("toggler");
     boxes = document.querySelectorAll(".box, .header");
     stateChar = toggler.innerHTML;
-    if(stateChar === "⇲") { // hide
-        toggler.innerHTML = "⇱";
+    if(stateChar === charHide) { // hide
+        toggler.innerHTML = charShow;
         boxes.forEach((box) => {box.classList.add("hidden")})
-    } else if(stateChar == "⇱") { // show
-        toggler.innerHTML = "⇲";
+    } else if(stateChar === charShow) { // show
+        toggler.innerHTML = charShow;
         boxes.forEach((box) => {box.classList.remove("hidden")})
     }
 }
