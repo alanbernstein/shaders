@@ -67,11 +67,11 @@
     }
 
     .footer-left {
-        grid-area: 6 / 1 / span 1 / span 2;
+        grid-area: 7 / 1 / span 1 / span 2;
     }
 
     .footer-right {
-        grid-area: 6 / 3 / span 1 / span 1;
+        grid-area: 7 / 3 / span 1 / span 1;
         text-align: right;
     }
 

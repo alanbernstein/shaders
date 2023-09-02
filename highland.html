@@ -17,7 +17,7 @@
 
                 <div class="box"><label for="slider1" class="label1">color:</label></div>
                 <div class="box"><span class="overlay label left-label label1" id="label1"></span></div>
-                <div class="box"><input type="range" min="1" max="6" value="0" step="1" class="overlay slider" id="slider1"><br /></div>
+                <div class="box"><input type="range" min="1" max="6" value="4" step="1" class="overlay slider" id="slider1"><br /></div>
 
                 <div class="box"><label for="slider2" class="label2">order:</label></div>
                 <div class="box"><span class="overlay label left-label label2" id="label2"></span></div>
@@ -25,11 +25,15 @@
 
                 <div class="box"><label for="slider3" class="label3">speed:</label></div>
                 <div class="box"><span class="overlay label left-label label3" id="label3"></span></div>
-                <div class="box"><input type="range" min="-2.0" max="2.0" value="0.1" step="0.1" class="overlay slider" id="slider3"><br /></div>
+                <div class="box"><input type="range" min="-2.0" max="2.0" value="0.0" step="0.1" class="overlay slider" id="slider3"><br /></div>
 
                 <div class="box"><label for="slider4" class="label4">width:</label></div>
                 <div class="box"><span class="overlay label left-label label4" id="label4"></span></div>
-                <div class="box"><input type="range" min="0.5" max="3.0" value="1.0" step="0.5" class="overlay slider" id="slider4"><br /></div>
+                <div class="box"><input type="range" min="0.1" max="3.0" value="0.3" step="0.025" class="overlay slider" id="slider4"><br /></div>
+
+                <div class="box"><label for="slider5" class="label5">phase:</label></div>
+                <div class="box"><span class="overlay label left-label label5" id="label5"></span></div>
+                <div class="box"><input type="range" min="0.0" max="1.0" value="0.765" step="0.005" class="overlay slider" id="slider5"><br /></div>
 
                 <div class="footer-left">
                     SDF text
@@ -66,6 +70,7 @@
         uniform float v2;
         uniform float v3;
         uniform float v4;
+        uniform float v5;
 
         float fmod(float x, float y) {
             return (x - y * floor(x / y));
@@ -384,7 +389,7 @@
             return vec4(col,1.0);
         }
 
-        vec4 color4(float t, float d, float speed, float width) {
+        vec4 color4(float t, float d, float speed, float width, float phase) {
             // 70s retro constant-N palette
             /*
             const vec3 cmap[6] = vec3[6](
@@ -400,7 +405,7 @@
 
             float order = 6.0;
 
-            float zz = fmod(floor(order*(d/width-t*speed))/order, 8.0);
+            float zz = fmod(floor(order*(d/width-t*speed-8.0*phase))/order, 8.0);
             vec3 rgb;
             if (zz <= 6.0) {
                 rgb = vec3(63, 138, 140);
@@ -474,6 +479,7 @@
             float order = v2;
             float speed = v3;
             float width = v4;
+            float phase = v5;
 
             float d = 1000.0;
 
@@ -504,7 +510,7 @@
             if(color == 1.0) { gl_FragColor = color1(t, d, order, speed, width); }
             if(color == 2.0) { gl_FragColor = color2(d, width); }
             if(color == 3.0) { gl_FragColor = color3(d, width); }
-            if(color == 4.0) { gl_FragColor = color4(t, d, speed, width); }
+            if(color == 4.0) { gl_FragColor = color4(t, d, speed, width, phase); }
             if(color == 5.0) { gl_FragColor = gengrad(t, d, g1, order, speed, width); }
             if(color == 6.0) { gl_FragColor = gengrad(t, d, g2, order, speed, width); }
         }
@@ -528,6 +534,7 @@
         const v2Ptr = gl.getUniformLocation(prog, 'v2');
         const v3Ptr = gl.getUniformLocation(prog, 'v3');
         const v4Ptr = gl.getUniformLocation(prog, 'v4');
+        const v5Ptr = gl.getUniformLocation(prog, 'v5');
         const start = new Date().getTime();
 
         mouseX = window.innerWidth/2
@@ -558,12 +565,15 @@
             document.getElementById("label3").innerHTML = v3;
             var v4 = document.getElementById("slider4").value
             document.getElementById("label4").innerHTML = v4;
+            var v5 = document.getElementById("slider5").value
+            document.getElementById("label5").innerHTML = v5;
 
             gl.uniform1f(millisecsPtr, (new Date().getTime())-start);
             gl.uniform1f(v1Ptr, v1);
             gl.uniform1f(v2Ptr, v2);
             gl.uniform1f(v3Ptr, v3);
             gl.uniform1f(v4Ptr, v4);
+            gl.uniform1f(v5Ptr, v5);
             gl.uniform1f(canvasWidthPtr, w);
             gl.uniform1f(canvasHeightPtr, h);
             gl.uniform1f(mouseXPtr, mouseX);
